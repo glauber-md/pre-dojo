@@ -5,6 +5,11 @@ import java.util.Date;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
+/**
+ * Evento da partida.
+ * @author glauber_md
+ *
+ */
 public class MatchEvent {
 
 	private Date time;

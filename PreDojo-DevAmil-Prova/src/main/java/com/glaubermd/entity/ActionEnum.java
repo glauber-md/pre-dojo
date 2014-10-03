@@ -1,5 +1,10 @@
 package com.glaubermd.entity;
 
+/**
+ * Representa as acoes possiveis de um Jogador.
+ * @author glauber_md
+ *
+ */
 public enum ActionEnum {
 
 	KILL("killed");

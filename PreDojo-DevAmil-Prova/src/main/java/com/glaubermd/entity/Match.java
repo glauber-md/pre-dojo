@@ -5,9 +5,14 @@ import java.util.List;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 
+/**
+ * Representando uma partida extraida dos arquivos de log.
+ * @author glauber_md
+ *
+ */
 public class Match {
 
-	private Integer id;
+	private int id;
 	private Date start;
 	private Date end;
 	private List<MatchEvent> events;
@@ -15,13 +20,13 @@ public class Match {
 	/**
 	 * @return the id
 	 */
-	public Integer getId() {
+	public int getId() {
 		return id;
 	}
 	/**
 	 * @param id the id to set
 	 */
-	public void setId(Integer id) {
+	public void setId(int id) {
 		this.id = id;
 	}
 	/**
