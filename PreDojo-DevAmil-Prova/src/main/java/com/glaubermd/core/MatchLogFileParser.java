@@ -1,4 +1,4 @@
-package com.glaubermd.util;
+package com.glaubermd.core;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -50,14 +50,21 @@ public class MatchLogFileParser {
 	 * @return Collecton contendo Files representando os logs de partidas.
 	 * @throws FileNotFoundException 
 	 */
-	public Collection<File> getFilesFromDir() throws FileNotFoundException {
+	public Collection<File> getFilesFromDir(String dirPath) throws FileNotFoundException {
 		File logDir = null;
-		URL logDirUrl = this.getClass().getResource(MATCH_LOG_PATH);
-		if(logDirUrl != null) {
-			logDir = new File(logDirUrl.getPath());
+		if(dirPath != null) {
+			// Usa caminho fora da aplicacao
+			logDir = new File(dirPath);
+		} else {
+			// Usa caminho dentro do classpath da aplicacao
+			dirPath = MATCH_LOG_PATH;
+			URL logDirUrl = this.getClass().getResource(dirPath);
+			if(logDirUrl != null) {
+				logDir = new File(logDirUrl.getPath());
+			}
 		}
 		if (logDir == null)
-			throw new FileNotFoundException("Directory for matches logs not found: " + MATCH_LOG_PATH);
+			throw new FileNotFoundException("Directory for matches logs not found: " + dirPath);
 		
 		return FileUtils.listFiles(logDir, VALID_FILE_EXTENSIONS, false);
 	}

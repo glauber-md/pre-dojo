@@ -1,11 +1,10 @@
-Coloque aqui suas instruções ou comentários que ache útil/relevantes para possamos ler 
-quando estivermos avaliando a sua solução
-
-------
 #GLAUBER-MD:
 
 - Cada partida fica armazenada em um arquivo à parte, na pasta src/main/resources/matches; o nome do arquivo contém o identificador da partida e a extensão ".log".
 - Quaisquer arquivos ".log" na pasta citada acima serão interpretados e suas linhas verificadas se correspondem ao formato de log esperado.
+- A pasta para interpretar os arquivos de log pode ser informada através da linha de comando.
 - O projeto utiliza Maven para build; o pacote JAR é gerado por este processo (executar 'mvn package' para tal).
+- Para se executar os testes unitarios, executar 'mvn test' a partir da raiz do projeto.
 - A classe principal, contendo o método "main" é a MatchLogReaderRunner; ela deve ser executada ao se rodar a aplicação através da IDE.
 - O pacote JAR precisa das bibliotecas commons-io e commons-lang; ambas estão presentes no diretório "lib" na raíz do repositório Git.
+- Para executar o programa atraves do JAR gerado, utilizar a sintaxe: 'java -cp PreDojo-DevAmil-Prova-1.0.0-SNAPSHOT.jar:{DIRETORIO_BIBLIOTECAS_APACHE_COMMONS}/* com.glaubermd.run.MatchLogReaderRunner {DIRETORIO_LOGS_PARTIDAS}'

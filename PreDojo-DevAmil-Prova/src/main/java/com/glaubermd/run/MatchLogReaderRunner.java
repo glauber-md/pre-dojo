@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.glaubermd.core.MatchLogFileParser;
 import com.glaubermd.entity.Match;
 import com.glaubermd.entity.MatchEvent;
-import com.glaubermd.util.MatchLogFileParser;
 
 public class MatchLogReaderRunner {
 
@@ -19,7 +19,12 @@ public class MatchLogReaderRunner {
 		Map<String,List<MatchEvent>> matchLogFiles = new HashMap<String,List<MatchEvent>>(); 
 		MatchLogFileParser fp = new MatchLogFileParser();
 		try {
-			for (File logFile : fp.getFilesFromDir()) {
+			// Obtem caminho do diretorio de logs pela linha de comando 
+			String logDirPath = null;
+			if(args != null && args.length > 0)
+				logDirPath = args[0];
+			
+			for (File logFile : fp.getFilesFromDir(logDirPath)) {
 				matchLogFiles.put(logFile.getName(), fp.parseFile(logFile));
 			}
 
