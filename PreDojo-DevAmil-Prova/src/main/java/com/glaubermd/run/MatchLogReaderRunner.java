@@ -30,10 +30,10 @@ public class MatchLogReaderRunner {
 			}
 
 			// Exibe ranking das partidas
-			fp.reportMatchRanking(matches);
+			fp.printMatchRanking(matches);
+			
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("Arquivo nao encontrado: " + e.getMessage());
 		}
 	}
 

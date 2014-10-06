@@ -8,9 +8,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,6 +28,8 @@ import com.glaubermd.entity.Weapon;
  */
 public class MatchLogFileParser {
 
+	private static final String REPORT_LINE_FORMAT = "%-20s:%20d%20d%20s%20s%38s%n";
+	private static final String REPORT_HEADER_FORMAT = "%-21s%20s%20s%20s%20s%38s%n";
 	private static final String WORLD_PLAYER_NAME = "<WORLD>";
 	private static final String USING_BY_REGEXP = "using|by";
 	private static final String DEFAULT_FILE_ENCODING = "UTF-8";
@@ -77,8 +78,7 @@ public class MatchLogFileParser {
 				}
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("Erro ao ler arquivo: " + e.getMessage());
 		}
 		return events;
 	}
@@ -98,8 +98,7 @@ public class MatchLogFileParser {
 			event.setTime(sdf.parse(splitLogLine[0]));
 			event.setLog(splitLogLine[1]);
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("Formato de data/hora para evento do jogo nao reconhecido: " + e.getMessage());
 		}
 		
 		if(!event.getLog().matches(MATCH_STARTED_REGEXP) 
@@ -130,12 +129,12 @@ public class MatchLogFileParser {
 	 * Formata e exibe o relatorio de final da partida (Ranking).
 	 * @param matches - List contendo Match, representando as partidas intepretadas a partir dos arquivos de log.
 	 */
-	public void reportMatchRanking(List<Match> matches) {
+	public void printMatchRanking(List<Match> matches) {
 		// Ranking
 		for (Match match : matches) {
-			System.out.printf("******************** GAME: %d%n", match.getId());
-			System.out.printf("%-21s%20s%20s%20s%38s%n", "_Player_", "_Kills_", "_Deaths_", "_MostUsedWeapon_", "_Awards_");
-			Map<Player, RankingEntry> ranking = new HashMap<Player, RankingEntry>();
+			System.out.printf("******************** MATCH: %d ********************%n", match.getId());
+			System.out.printf(REPORT_HEADER_FORMAT, "-Player-", "-Kills-", "-Deaths-", "-MostUsedWeapon-", "-KillStreak-", "-Awards-");
+			List<Player> ranking = new ArrayList<Player>();
 			
 			for (MatchEvent event : match.getEvents()) {
 
@@ -143,50 +142,64 @@ public class MatchLogFileParser {
 					// Evita eventos do usuario <WORLD>
 					if(!isEventFromWorld(event)) {
 						// assassinatos
-						if (ranking.containsKey(event.getAssassin())) {
-							RankingEntry playerRanking = ranking.get(event.getAssassin());
-							playerRanking.addKill(event.getTime());
-							playerRanking.recordWeaponUsage(event.getWeapon());
-							ranking.put(event.getAssassin(), playerRanking);
+						if (ranking.contains(event.getAssassin())) {
+							Player assassin = ranking.get(ranking.indexOf(event.getAssassin()));
+							assassin.getRanking().addKill(event.getTime());
+							assassin.getRanking().recordWeaponUsage(event.getWeapon());
+							ranking.set(ranking.indexOf(assassin), assassin);
 						} else {
 							RankingEntry playerRanking = new RankingEntry(1, 0);
 							playerRanking.recordWeaponUsage(event.getWeapon());
-							ranking.put(event.getAssassin(), playerRanking);
+							event.getAssassin().setRanking(playerRanking);
+							ranking.add(event.getAssassin());
 						}
 						
 						// mortes sofridas
-						if (ranking.containsKey(event.getVictim())) {
-							RankingEntry playerRanking = ranking.get(event.getVictim());
-							playerRanking.addDeath();
-							ranking.put(event.getVictim(), playerRanking);
+						if (ranking.contains(event.getVictim())) {
+							Player victim = ranking.get(ranking.indexOf(event.getVictim()));
+							victim.getRanking().addDeath();
+							ranking.set(ranking.indexOf(victim), victim);
 						} else {
-							ranking.put(event.getVictim(), new RankingEntry(0, 1));
+							event.getVictim().setRanking(new RankingEntry(0, 1));
+							ranking.add(event.getVictim());
 						}
 					}
 				}
 			}
 			
-			for (Player player : ranking.keySet()) {
-				
-				// Premio por terminar partida sem morrer
-				if (ranking.get(player).getDeaths() == 0) {
-					ranking.get(player).addAward(AwardTypeEnum.IMMORTAL);
-				}
-				// Premio por matar 5 ou mais vezes em um minuto 
-				if (ranking.get(player).getKillsInOneMinute() >= 5) {
-					ranking.get(player).addAward(AwardTypeEnum.MOST_KILLS_IN_ONE_MINUTE);
-				}
-				
-				System.out.printf("%-20s:%20d%20d%20s%38s%n", 
+			// Ordena o placar
+			Collections.sort(ranking);
+			Collections.reverse(ranking);
+			
+			for (Player player : ranking) {
+				computeAwards(player);
+				System.out.printf(REPORT_LINE_FORMAT, 
 						player.getName(), 
-						ranking.get(player).getKills(), 
-						ranking.get(player).getDeaths(),
-						ranking.get(player).getMostUsedWeapon() != null ?
-								ranking.get(player).getMostUsedWeapon().getName()
+						player.getRanking().getKills(), 
+						player.getRanking().getDeaths(),
+						player.getRanking().getMostUsedWeapon() != null ?
+								player.getRanking().getMostUsedWeapon().getName()
 								: "",
-						ranking.get(player).getAwards()
+						player.getRanking().getKillStreak(),
+						player.getRanking().getAwards()
 				);
 			}
+		}
+	}
+
+
+	/**
+	 * Calcula os premios recebidos pelo jogador na partida.
+	 * @param player - o jogador a ter o premio calculado.
+	 */
+	private void computeAwards(Player player) {
+		// Premio por terminar partida sem morrer
+		if (player.getRanking().getDeaths() == 0) {
+			player.getRanking().addAward(AwardTypeEnum.IMMORTAL);
+		}
+		// Premio por matar 5 ou mais vezes em um minuto 
+		if (player.getRanking().getKillsInOneMinute() >= 5) {
+			player.getRanking().addAward(AwardTypeEnum.MOST_KILLS_IN_ONE_MINUTE);
 		}
 	}
 

@@ -14,7 +14,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
  * @author glauber_md
  *
  */
-public class RankingEntry {
+public class RankingEntry implements Comparable<RankingEntry> {
 
 	private static final int ONE_MINUTE = 60 * 1000;
 	private int kills;
@@ -25,31 +25,45 @@ public class RankingEntry {
 	private int mostUsedWeaponAccumulator;
 	private Date lastKillTime;
 	private int killsInOneMinute;
+	private int killStreakAccumulator;
+	private int killStreak;
 	
 	public RankingEntry(int kills, int deaths) {
 		this.kills = kills;
 		this.deaths = deaths;
 		awards = new ArrayList<AwardTypeEnum>();
 		weaponUsage = new HashMap<Weapon,Integer>();
+		killStreakAccumulator = this.kills;
+		updateKillStreak(killStreakAccumulator);
 	}
 	
 	public void addKill() {
-		kills += 1;
+		addKill(null);
 	}
 	
 	public void addKill(Date currentKillTime) {
-		if (this.lastKillTime == null) {
+		if (this.lastKillTime == null && currentKillTime != null) {
 			this.lastKillTime = currentKillTime;
 			killsInOneMinute++;
 		}
-		if ((currentKillTime.getTime() - this.lastKillTime.getTime()) <= ONE_MINUTE) {
+		if (currentKillTime != null && (currentKillTime.getTime() - this.lastKillTime.getTime()) <= ONE_MINUTE) {
 			killsInOneMinute++;
 		}
-		kills += 1;
+		kills++;
+		killStreakAccumulator++;
+		updateKillStreak(killStreakAccumulator);
 	}
 	
 	public void addDeath() {
-		deaths += 1;
+		deaths++;
+		// KillStreak para; montante acumulado eh armazenado para exibicao
+		updateKillStreak(killStreakAccumulator);
+		killStreakAccumulator = 0;
+	}
+
+	private void updateKillStreak(int newValue) {
+		if(newValue > 0 && newValue > killStreak) 
+			this.killStreak = newValue;
 	}
 	
 	public void addAward(AwardTypeEnum award) {
@@ -115,12 +129,58 @@ public class RankingEntry {
 	/**
 	 * @return the killsInOneMinute
 	 */
-	public int getKillsInOneMinute() {
+	public Integer getKillsInOneMinute() {
 		return killsInOneMinute;
+	}
+
+	/**
+	 * @return the killstreak
+	 */
+	public Integer getKillStreak() {
+		return killStreak;
 	}
 
 	@Override
 	public String toString() {
 		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+	}
+
+	@Override
+	public int compareTo(RankingEntry o) {
+		int cmp = 0;
+		if(o == null)
+			cmp = -1;
+		// Compara Ranking de acordo com assassinatos, depois mortes, quantidade de premios, qtd de mortes no minuto, killstreak 
+		cmp = this.getKills().compareTo(o.getKills());
+		if(cmp == 0)
+			cmp = o.getDeaths().compareTo(this.getDeaths());
+		if(cmp == 0)
+			cmp = ((Integer)this.getAwards().size()).compareTo(o.getAwards().size());
+		if(cmp == 0)
+			cmp = this.getKillsInOneMinute().compareTo(o.getKillsInOneMinute());
+		if(cmp == 0)
+			cmp = this.getKillStreak().compareTo(o.getKillStreak());
+		
+		return cmp;
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.kills + this.deaths * 9;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		boolean equals = false;
+		if (obj instanceof RankingEntry) {
+			RankingEntry o = (RankingEntry)obj;
+			equals = o.getKills() == this.kills 
+					&& o.getDeaths() == this.deaths 
+					&& o.getKillsInOneMinute() == this.killsInOneMinute
+					&& o.getMostUsedWeapon().equals(this.mostUsedWeapon)
+					&& o.getKillStreak().equals(this.killStreak);
+		}
+
+		return equals;
 	}
 }

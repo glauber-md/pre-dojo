@@ -8,12 +8,14 @@ import org.apache.commons.lang.builder.ToStringStyle;
  * @author glauber_md
  *
  */
-public class Player {
+public class Player implements Comparable<Player> {
 
 	private String name;
+	private RankingEntry ranking;
 	
 	public Player(String name) {
 		this.name = name;
+		this.ranking = new RankingEntry(0, 0);
 	}
 
 	/**
@@ -30,6 +32,20 @@ public class Player {
 		this.name = name;
 	}
 	
+	/**
+	 * @return the ranking
+	 */
+	public RankingEntry getRanking() {
+		return ranking;
+	}
+
+	/**
+	 * @param ranking the ranking to set
+	 */
+	public void setRanking(RankingEntry ranking) {
+		this.ranking = ranking;
+	}
+
 	@Override
 	public int hashCode() {
 		return (this.name != null) ? this.name.length() * 7 : 0;
@@ -46,5 +62,18 @@ public class Player {
 	@Override
 	public String toString() {
 		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+	}
+
+	@Override
+	public int compareTo(Player o) {
+		int cmp = 0;
+		if(this.name != null && this.ranking != null) {
+			// Compara Player por Ranking, depois por Nome
+			cmp = this.ranking.compareTo(o.getRanking());
+			if(cmp == 0)
+				cmp = this.name.compareTo(o.getName());
+		}
+		
+		return cmp;
 	}
 }
