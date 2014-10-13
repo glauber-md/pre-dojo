@@ -22,27 +22,44 @@ import com.glaubermd.entity.MatchEvent;
 import com.glaubermd.entity.Player;
 import com.glaubermd.entity.RankingEntry;
 import com.glaubermd.entity.Weapon;
+import com.glaubermd.util.AppEnumUtil;
+import com.glaubermd.util.RegexpUtil;
 
 /**
  * Implementa funcoes de interpretacao de arquivos de log.
  */
-public class MatchLogFileParser {
+public final class MatchLogFileParser {
 
+	private static final String SPACES_REGEXP = "\\s+";
+	private static final String USING_BY_REGEXP = "using|by";
+	private static final String MATCH_STARTED_REGEXP = "New match [\\d]+ has started";
+	private static final String MATCH_ID_REGEXP = "[\\d]+";
+	private static final String MATCH_ENDED_REGEXP = "Match [\\d]+ has ended";
+	private static final String VALID_LINE_REGEXP = "^[\\d]{2}\\/[\\d]{2}\\/[\\d]{4} [\\d]{2}:[\\d]{2}:[\\d]{2} - .*$";
+	private static final String LINE_TOKEN_SEPARATOR_REGEXP = " - ";
+	private static final String PLAYER_NAME_REGEXP = "[\\w\\d_*/|<>]+";
+	private static final String PLAYER_NAME_EXTRACTION_REGEXP;
+	private static final String ACTIONS_REGEXP;
 	private static final String REPORT_LINE_FORMAT = "%-20s:%20d%20d%20s%20s%38s%n";
 	private static final String REPORT_HEADER_FORMAT = "%-21s%20s%20s%20s%20s%38s%n";
 	private static final String WORLD_PLAYER_NAME = "<WORLD>";
-	private static final String USING_BY_REGEXP = "using|by";
+	private static final String EMPTY_STRING = "";
 	private static final String DEFAULT_FILE_ENCODING = "UTF-8";
-	private static final String MATCH_STARTED_REGEXP = "New match [0-9]+ has started";
-	private static final String MATCH_ID_REGEXP = "[0-9]+";
-	private static final String MATCH_ENDED_REGEXP = "Match [0-9]+ has ended";
 	private static final String MATCH_LOG_PATH = "/matches";
-	private static final String VALID_LINE_REGEXP = "^[0-9]{2}\\/[0-9]{2}\\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} - .*$";
-	private static final String LINE_TOKEN_SEPARATOR_REGEXP = " - ";
-	private static final String PLAYER_NAME_REGEXP = "[a-zA-Z0-9_*/<>]+";
-	private static final String PLAYER_NAMES_EXTRACTION_REGEXP = PLAYER_NAME_REGEXP + " " + ActionEnum.KILL.getAction() + " " + PLAYER_NAME_REGEXP;
 	private static final String[] VALID_FILE_EXTENSIONS = {"log"};
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+	
+	static {
+		// Gera pattern para busca por nome de jogadores para cada acao possivel
+		ACTIONS_REGEXP = RegexpUtil.getGroupSyntax(AppEnumUtil.getEnumValues(ActionEnum.values()));
+		PLAYER_NAME_EXTRACTION_REGEXP = new StringBuilder()
+		.append(PLAYER_NAME_REGEXP)
+		.append(SPACES_REGEXP)
+		.append(ACTIONS_REGEXP)
+		.append(SPACES_REGEXP)
+		.append(PLAYER_NAME_REGEXP)
+		.toString();
+	}
 	
 	
 	/**
@@ -111,13 +128,23 @@ public class MatchLogFileParser {
 		if(!event.getLog().matches(MATCH_STARTED_REGEXP) 
 				&& !event.getLog().matches(MATCH_ENDED_REGEXP)) {
 			
-			// acha jogadores
-			Pattern playerPattern = Pattern.compile(PLAYER_NAMES_EXTRACTION_REGEXP);
+			// Acha acoes do jogador
+			Pattern actionPattern = Pattern.compile(ACTIONS_REGEXP);
+			Matcher actionMatcher = actionPattern.matcher(event.getLog());
+			if (actionMatcher.find()) {
+				event.setAction(actionMatcher.group(0));
+			}
+			
+			// Acha jogadores (assassino/vitima) no evento
+			Pattern playerPattern = Pattern.compile(PLAYER_NAME_EXTRACTION_REGEXP);
 			Matcher playerMatcher = playerPattern.matcher(event.getLog());
 			if (playerMatcher.find()) {
-				String[] players = playerMatcher.group(0).split(ActionEnum.KILL.getAction());
-				event.setAssassin(new Player(players[0].trim()));
-				event.setVictim(new Player(players[1].trim()));
+				// Acao considerada no placar eh apenas de assassinatos
+				if(event.getAction() != null && event.getAction().equals(ActionEnum.KILL)) {
+					String[] players = playerMatcher.group(0).split(event.getAction().getActionDescription());
+					event.setAssassin(new Player(players[0].trim()));
+					event.setVictim(new Player(players[1].trim()));						
+				}
 			}
 			
 			// acha armas / eventos fatais do mundo
@@ -186,7 +213,7 @@ public class MatchLogFileParser {
 						player.getRanking().getDeaths(),
 						player.getRanking().getMostUsedWeapon() != null ?
 								player.getRanking().getMostUsedWeapon().getName()
-								: "",
+								: EMPTY_STRING,
 						player.getRanking().getKillStreak(),
 						player.getRanking().getAwards()
 				);

@@ -88,6 +88,15 @@ public class MatchEvent {
 	public void setAction(ActionEnum action) {
 		this.action = action;
 	}
+	
+	public void setAction(String action) {
+		if(action != null) {
+			for (ActionEnum aEnum : ActionEnum.values()) {
+				if(aEnum.getActionDescription().equals(action))
+					this.action = aEnum;
+			}
+		}
+	}
 
 	/**
 	 * @return the weapon

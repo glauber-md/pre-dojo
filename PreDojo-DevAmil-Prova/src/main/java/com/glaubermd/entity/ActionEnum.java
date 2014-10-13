@@ -1,5 +1,6 @@
 package com.glaubermd.entity;
 
+
 /**
  * Representa as acoes possiveis de um Jogador.
  * @author glauber_md
@@ -7,18 +8,22 @@ package com.glaubermd.entity;
  */
 public enum ActionEnum {
 
-	KILL("killed");
-	// REVIVED
-	// CURED
+	KILL("killed"),
+	REVIVE("revived"),
+	CURE("cured"),
+	CURSE("cursed"),
+	HASTEN("hastened"),
+	KICK_OUT("kicked out"),
+	BAN("banned");
 	
-	private String action;
+	private String actionDescription;
 	
 	ActionEnum(String action) {
-		this.action = action;
+		this.actionDescription = action;
 	}
 
-	public String getAction() {
-		return action;
+	public String getActionDescription() {
+		return actionDescription;
 	}
-
+	
 }
